@@ -12,19 +12,33 @@ echo "Do not execute!" && exit
 # Mount USB drive and load favorite keyboard layout
 # ----------------------------------------
 usb=/tmp/usb
+repo=$usb/arch-setup
+prefix=/client
+
 mkdir -p $usb
 mount /dev/sdc1 $usb
-usb=$usb/arch-setup
-loadkeys $usb/map/c++.map
+loadkeys $repo/map/c++.map
 
 # ----------------------------------------
 # Save history to USB
 # ----------------------------------------
 HISTSIZE=10000
 SAVEHIST=10000
-HISTFILE=$usb/log/host-$(date +'%F %T')
+HISTFILE=$repo/log/host-$(date +'%F %T')
 setopt incappendhistory
 export EDITOR=vim
+export DIFFTOOL=vimdiff
+
+EDIT()
+{
+    for file in $@; do
+        if [[ -f $prefix$file ]]; then
+            $DIFFTOOL {$repo,$prefix}$file;
+        else
+            $EDITOR $prefix$file
+        fi
+    done
+}
 
 
 # ----------------------------------------
@@ -74,19 +88,19 @@ mkfs.ext4 -m0 -L home /dev/scsi/home
 # ----------------------------------------
 # Mount filesystems
 # ----------------------------------------
-mkdir -p /client
-mount /dev/mapper/crypt-root /client
-mkdir -p /client/boot
-mkdir -p /client/home
-mkdir -p /client/usr
-mount /dev/mapper/crypt-home /client/home
-mount /dev/scsi/boot         /client/boot
-mount /dev/scsi/usr          /client/usr
+mkdir -p $prefix
+mount /dev/mapper/crypt-root $prefix
+mkdir -p $prefix/boot
+mkdir -p $prefix/home
+mkdir -p $prefix/usr
+mount /dev/mapper/crypt-home $prefix/home
+mount /dev/scsi/boot         $prefix/boot
+mount /dev/scsi/usr          $prefix/usr
 
 # ----------------------------------------
 # Add key to home (so it can be automounted)
 # ----------------------------------------
-keys=/client/etc/key
+keys=$prefix/etc/key
 mkdir -pm 700 $keys
 dd if=/dev/urandom of=$keys/home bs=1024 count=4
 chmod 0400 $keys/home
@@ -97,34 +111,35 @@ cryptsetup luksAddKey /dev/scsi/home $keys/home
 # 
 # NOTE: only for non-paranoid!
 # ----------------------------------------
-cryptsetup luksHeaderBackup /dev/scsi/root --header-backup-file $usb/log/root.img
-cryptsetup luksHeaderBackup /dev/scsi/home --header-backup-file $usb/log/home.img
+cryptsetup luksHeaderBackup /dev/scsi/root --header-backup-file $repo/log/root.img
+cryptsetup luksHeaderBackup /dev/scsi/home --header-backup-file $repo/log/home.img
 
 # ----------------------------------------
 # Prepare mirrorlist
 # ----------------------------------------
 cp /etc/pacman.d/mirrorlist /tmp/mirrorlist
 rankmirrors -n 6 /tmp/mirrorlist > /etc/pacman.d/mirrorlist
-$EDITOR /etc/pacman.d/mirrorlist
+EDIT /etc/pacman.d/mirrorlist
 
 # ----------------------------------------
 # Prepare base system
 # 
 # I want vim, zsh and keyboard layouts available
 # ----------------------------------------
-pacstrap /client base base-devel $EDITOR zsh
-cp $usb/map/*.map /client/usr/share/kbd/keymaps
+pacstrap $prefix base base-devel $EDITOR zsh
+cp $repo/map/*.map $prefix/usr/share/kbd/keymaps
 
 # ----------------------------------------
 # Create and check /etc/fstab
 #
 # NOTE: set passno=0 for /usr!
 # ----------------------------------------
-genfstab -p /client >> /client/etc/fstab
-$EDITOR /client/etc/fstab
+genfstab -p $prefix >> $prefix/etc/fstab
+EDIT /etc/fstab
+EDIT /etc/crypttab
 
 # ----------------------------------------
 # Enter client phase
 # ----------------------------------------
-arch-chroot /client zsh
+arch-chroot $prefix zsh
 

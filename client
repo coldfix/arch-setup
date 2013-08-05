@@ -1,6 +1,9 @@
 #! /usr/bin/env zsh
 echo "Do not execute!" && exit
 
+repo=/tmp/usb/arch-setup
+prefix=
+
 # ----------------------------------------
 # Save history on disk
 # ----------------------------------------
@@ -9,6 +12,18 @@ HISTSIZE=10000
 HISTFILE=/root/.zsh_history
 setopt incappendhistory
 export EDITOR=vim
+export DIFFTOOL=vimdiff
+
+EDIT()
+{
+    for file in $@; do
+        if [[ -f $prefix$file ]]; then
+            $DIFFTOOL {$repo,$prefix}$file;
+        else
+            $EDITOR $prefix$file
+        fi
+    done
+}
 
 lvmdrive=/dev/sda
 lvmpart=${lvmdrive}2
@@ -17,18 +32,14 @@ lvmpart=${lvmdrive}2
 # Generate locale
 # ----------------------------------------
 passwd
-$EDITOR /etc/locale.gen
+EDIT /etc/locale.gen
 locale-gen
-echo "LANG=en_US.UTF-8" > /etc/locale.conf
+EDIT /etc/locale.conf
 ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 echo core-problem > /etc/hostname
 
 pacman -S terminus-font
-cat <<VCONSOLE > /etc/vconsole.conf
-KEYMAP=dvorak-de
-ter-216n
-FONT_MAP=8859-2_to_uni
-VCONSOLE
+EDIT /etc/vconsole.conf
 
 # ----------------------------------------
 # Set hardware clock to UTC
@@ -47,10 +58,10 @@ hwclock -w
 #  - keymap         (change to preferred keymap before password prompt)
 #  - lvm2           (need lvm before encrypt: LUKS on LVM)
 #  - encrypt        (encrypt hook)
-#  - filesystems
+#  - filesystems    (encrypt should be loaded before this)
 #  - keyboard
-#  - shutdown
-#  - fsck
+#  - shutdown       (for usr)
+#  - fsck           (for usr)
 #  - usr            (needed since /usr is on separate partition)
 #
 # Add the following MODULES (make consolefont working)
@@ -58,7 +69,7 @@ hwclock -w
 #  - dm_mod
 #  - ext4
 # ----------------------------------------
-$EDITOR /etc/mkinitcpio.conf
+EDIT /etc/mkinitcpio.conf
 mkinitcpio -p linux
 
 
@@ -76,7 +87,7 @@ mkinitcpio -p linux
 # ----------------------------------------
 pacman -S grub-bios
 pacman -S os-prober
-$EDITOR /etc/default/grub
+EDIT /etc/default/grub
 grub-mkconfig -o /boot/grub/grub.cfg
 grub-install $lvmdrive
 
