@@ -1,0 +1,27 @@
+SAVEHIST=10000
+HISTSIZE=10000
+HISTFILE=/root/.zsh_history
+
+vim /etc/locale.gen
+locale-gen
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
+echo "KEYMAP=dvorak-de" > /etc/vconsole.conf
+ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
+
+pacman -S ntp
+systemctl enable ntpd.service
+hwclock --systohc --utc
+ntpd -gq 
+hwclock -w
+
+vim /etc/mkinitcpio.conf
+echo core-problem > /etc/hostname
+mkinitcpio -p linux
+mkinitcpio -p linux
+passwd
+
+pacman -S grub-bios os-prober
+vim /etc/default/grub
+grub-mkconfig -o /boot/grub/grub.cfg
+grub-install /dev/sda
+fc -W

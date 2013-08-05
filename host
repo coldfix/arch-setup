@@ -1,0 +1,51 @@
+# mount USB drive and load favorite keyboard layout
+mount /dev/sdc1 /mnt
+loadkeys /mnt/arch/c++.map
+
+# save history to USB
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE=/mnt/arch/host-$(date +'%F %T')
+setopt incappendhistory
+
+# partition hdd
+fdisk /dev/sda
+
+# encrypt luks partition
+loadkeys us
+cryptsetup luksFormat -y /dev/sda3
+cryptsetup open /dev/sda3 cryptroot
+loadkeys /tmp/arch/c++.map
+
+# lvm
+pvcreate /dev/mapper/cryptroot
+vgcreate scsi0 /dev/mapper/cryptroot
+lvcreate -L 24G      scsi0 -n root
+lvcreate -L 2G       scsi0 -n swap
+lvcreate -l 100%FREE scsi0 -n home
+vgchange -ay
+
+# create fs
+mkfs.ext4 -m0 -L boot /dev/sda2
+mkfs.ext4 -m0 -L arch /dev/scsi0/root
+mkfs.ext4 -m0 -L home /dev/scsi0/home
+mkswap /dev/scsi0/swap
+
+# mount fs
+mkdir /client
+mount /dev/scsi0/root /client
+mkdir /client/boot
+mkdir /client/home
+mount /dev/scsi0/home /client/home
+mount /dev/sda2 /client/boot
+
+# prepare base system
+rankmirrors -n 6 /etc/pacman.d/mirrorlist > /tmp/mirrorlist
+mv /tmp/mirrorlist /etc/pacman.d/mirrorlist
+pacstrap /client base base-devel vim zsh
+genfstab -p /client >> /client/etc/fstab
+cp /mnt/arch/*.map /client/usr/share/kbd/keymaps
+
+# start phase 1
+arch-chroot /client zsh
+fc -W
