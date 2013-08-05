@@ -1,0 +1,14 @@
+# /etc/fstab: static file system information
+#
+# <file system>	<dir>	<type>	<options>	<dump>	<pass>
+# UUID=df76145d-3c31-4e92-9b81-85d9585e2d55 LABEL=arch
+/dev/mapper/crypt-root	/         	ext4      	rw,relatime,data=ordered	0 1
+
+# UUID=fd1b704d-4118-4917-acd5-65027af3f0d9 LABEL=home
+/dev/mapper/crypt-home	/home     	ext4      	rw,relatime,data=ordered	0 2
+
+# UUID=c6896c53-ffa4-438f-997e-7956d9da11e6 LABEL=usr
+/dev/mapper/scsi-usr	/usr      	ext4      	rw,relatime,data=ordered	0 0
+
+# UUID=103e319c-9fb0-4ed3-88ae-a97709641098 LABEL=boot
+/dev/mapper/scsi-boot	/boot     	ext4      	rw,relatime,data=ordered	0 2
