@@ -20,9 +20,15 @@ passwd
 $EDITOR /etc/locale.gen
 locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
-echo "KEYMAP=dvorak-de" > /etc/vconsole.conf
 ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 echo core-problem > /etc/hostname
+
+pacman -S terminus-font
+cat <<VCONSOLE > /etc/vconsole.conf
+KEYMAP=dvorak-de
+ter-216n
+FONT_MAP=8859-2_to_uni
+VCONSOLE
 
 # ----------------------------------------
 # Set hardware clock to UTC
