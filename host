@@ -1,51 +1,126 @@
-# mount USB drive and load favorite keyboard layout
+#! /bin/zsh
+
+# ----------------------------------------
+# NOTE: This is a VERY non-paranoid setup:
+#  - /usr is not encrypted
+#  - a key for /home resides within /etc/key
+#  - a cryptheader backup is proposed
+# ----------------------------------------
+
+# ----------------------------------------
+# Mount USB drive and load favorite keyboard layout
+# ----------------------------------------
 mount /dev/sdc1 /mnt
 loadkeys /mnt/arch/c++.map
 
-# save history to USB
+# ----------------------------------------
+# Save history to USB
+# ----------------------------------------
 HISTSIZE=10000
 SAVEHIST=10000
 HISTFILE=/mnt/arch/host-$(date +'%F %T')
 setopt incappendhistory
+export EDITOR=vim
 
-# partition hdd
-fdisk /dev/sda
 
-# encrypt luks partition
-loadkeys us
-cryptsetup luksFormat -y /dev/sda3
-cryptsetup open /dev/sda3 cryptroot
-loadkeys /tmp/arch/c++.map
+# ----------------------------------------
+# Partition hdd with GPT (BIOS-GPT)
+#
+# A full setup looks like this:
+# - Create new partition table:     o
+# - Switch to 1-byte alignment:     x L 1 m 
+# - Create BIOS boot partition:     n 1 34 2047 ef02
+# - Revert partition alignment:     x L 2048 m
+# - Create LVM partition:           n . . . 8e00
+# - Write and exit to shell:        w
+# ----------------------------------------
+lvmdrive=/dev/sda
+lvmpart=${lvmdrive}2
 
-# lvm
-pvcreate /dev/mapper/cryptroot
-vgcreate scsi0 /dev/mapper/cryptroot
-lvcreate -L 24G      scsi0 -n root
-lvcreate -L 2G       scsi0 -n swap
-lvcreate -l 100%FREE scsi0 -n home
+gdisk $lvmdrive
+
+
+# ----------------------------------------
+# Setup LVM
+# ----------------------------------------
+pvcreate $lvmpart
+vgcreate scsi $lvmpart
+lvcreate -L 256M     scsi -n boot
+lvcreate -L 8G       scsi -n root
+lvcreate -L 24G      scsi -n usr
+lvcreate -l 100%FREE scsi -n home
 vgchange -ay
 
-# create fs
-mkfs.ext4 -m0 -L boot /dev/sda2
-mkfs.ext4 -m0 -L arch /dev/scsi0/root
-mkfs.ext4 -m0 -L home /dev/scsi0/home
-mkswap /dev/scsi0/swap
+# ----------------------------------------
+# Encrypt LUKS partitions
+# ----------------------------------------
+cryptsetup luksFormat -y /dev/scsi/root
+cryptsetup luksFormat -y /dev/scsi/home
+cryptsetup open /dev/scsi/root crypt-root
+cryptsetup open /dev/scsi/home crypt-home
 
-# mount fs
+# ----------------------------------------
+# Create filesystems
+# ----------------------------------------
+mkfs.ext4 -m0 -L boot /dev/scsi/boot
+mkfs.ext4 -m0 -L arch /dev/scsi/root
+mkfs.ext4 -m0 -L usr  /dev/scsi/usr
+mkfs.ext4 -m0 -L home /dev/scsi/home
+
+# ----------------------------------------
+# Mount filesystems
+# ----------------------------------------
 mkdir /client
-mount /dev/scsi0/root /client
+mount /dev/mapper/crypt-root /client
 mkdir /client/boot
 mkdir /client/home
-mount /dev/scsi0/home /client/home
-mount /dev/sda2 /client/boot
+mkdir /client/usr
+mount /dev/mapper/crypt-home /client/home
+mount /dev/scsi/boot         /client/boot
+mount /dev/scsi/usr          /client/usr
 
-# prepare base system
-rankmirrors -n 6 /etc/pacman.d/mirrorlist > /tmp/mirrorlist
-mv /tmp/mirrorlist /etc/pacman.d/mirrorlist
-pacstrap /client base base-devel vim zsh
-genfstab -p /client >> /client/etc/fstab
+# ----------------------------------------
+# Add key to home (so it can be automounted)
+# ----------------------------------------
+keys=/client/etc/key
+mkdir -pm 700 $keys
+dd if=/dev/urandom of=$keys/home bs=1024 count=4
+chmod 0400 $keys/home
+cryptsetup luksAddKey /dev/scsi/home $keys/home
+
+# ----------------------------------------
+# Backup LUKS crypt headers to USB
+# 
+# NOTE: only for non-paranoid!
+# ----------------------------------------
+cryptsetup luksHeaderBackup /dev/scsi/root --header-backup-file /mnt/arch/root.img
+cryptsetup luksHeaderBackup /dev/scsi/home --header-backup-file /mnt/arch/home.img
+
+# ----------------------------------------
+# Prepare mirrorlist
+# ----------------------------------------
+cp /etc/pacman.d/mirrorlist /tmp/mirrorlist
+rankmirrors -n 6 /tmp/mirrorlist > /etc/pacman.d/mirrorlist
+$EDITOR /etc/pacman.d/mirrorlist
+
+# ----------------------------------------
+# Prepare base system
+# 
+# I want vim, zsh and keyboard layouts available
+# ----------------------------------------
+pacstrap /client base base-devel $EDITOR zsh
 cp /mnt/arch/*.map /client/usr/share/kbd/keymaps
 
-# start phase 1
+# ----------------------------------------
+# Create and check /etc/fstab
+#
+# NOTE: set passno=0 for /usr!
+# ----------------------------------------
+genfstab -p /client >> /client/etc/fstab
+$EDITOR /client/etc/fstab
+
+# ----------------------------------------
+# Enter client phase
+# ----------------------------------------
 arch-chroot /client zsh
-fc -W
+
