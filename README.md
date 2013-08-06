@@ -23,6 +23,10 @@
 This is meant as an inspiration/guidance how to perform an crypt-setup. It is
 by no means complete and will not work without user intervention.
 
+After booting into the live archlinux installation system, you can start to
+execute the commands from `host`. In the chroot environment, execute the
+commands from `client`.
+
 File overview:
 
 * `host`: basic setup from the installation medium
@@ -44,4 +48,13 @@ the installation process:
 * [LVM](https://wiki.archlinux.org/index.php/LVM)
 * [Partitioning](https://wiki.archlinux.org/index.php/Partitioning)
 * [mkinitcpio](https://wiki.archlinux.org/index.php/Mkinitcpio) and especially [/usr as a separate partition](https://wiki.archlinux.org/index.php/Mkinitcpio#.2Fusr_as_a_separate_partition)
+
+Additionally, I strongly recommend to have a look at
+
+* [The Diceware Passphrase Home Page](http://world.std.com/~reinhold/diceware.html)
+
+Concerning the overwriting of the old data:
+
+* [Secure Deletion of Data from Magnetic and Solid-State Memory](https://www.usenix.org/legacy/publications/library/proceedings/sec96/full_papers/gutmann/index.html) if you are really paranoid. On the other hand, in this case this setup is probably nothing for you.
+* [Overwriting Hard Drive Data](http://computer-forensics.sans.org/blog/2009/01/15/overwriting-hard-drive-data/) for a more recent analysis on this topic
 
