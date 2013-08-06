@@ -27,6 +27,7 @@ File overview
 
 * `host`: basic setup from the installation medium
 * `client`: basic setup from within the chroot environment of the new system
+* `config`: contains common and target system configuration
 * `etc`: the actual configuration files on the destination system
 * `map`: terminal keyboard layouts used during installation
 

@@ -1,6 +1,9 @@
 #! /usr/bin/env zsh
-echo "Do not execute!" && exit
-
+echo "
+This content is meant as a guide and NOT for unattended execution.
+You should only copy and execute any of the snippets after careful
+inspection and adaptation to your needs.
+" && exit
 # ----------------------------------------
 # NOTE: This is a VERY non-paranoid setup:
 #  - /usr is not encrypted
@@ -8,38 +11,28 @@ echo "Do not execute!" && exit
 #  - a cryptheader backup is proposed
 # ----------------------------------------
 
+
 # ----------------------------------------
+# Meta stuff:
+#
 # Mount USB drive and load favorite keyboard layout
 # ----------------------------------------
 usb=/tmp/usb
+mkdir $usb
+mount /dev/sdc1 $usb
+
 repo=$usb/arch-setup
+loadkeys $repo/map/c++.map # Probably, you don't want this.
+
+source $repo/config
+HIST $repo/log/host-$(date +'%F %T')
+
 prefix=/client
 
-mkdir -p $usb
-mount /dev/sdc1 $usb
-loadkeys $repo/map/c++.map
 
 # ----------------------------------------
-# Save history to USB
+# Now let's get to it
 # ----------------------------------------
-HISTSIZE=10000
-SAVEHIST=10000
-HISTFILE=$repo/log/host-$(date +'%F %T')
-setopt incappendhistory
-export EDITOR=vim
-export DIFFTOOL=vimdiff
-
-EDIT()
-{
-    for file in $@; do
-        if [[ -f $prefix$file ]]; then
-            $DIFFTOOL {$repo,$prefix}$file;
-        else
-            $EDITOR $prefix$file
-        fi
-    done
-}
-
 
 # ----------------------------------------
 # Partition hdd with GPT (BIOS-GPT)
@@ -52,9 +45,6 @@ EDIT()
 # - Create LVM partition:           n . . . 8e00
 # - Write and exit to shell:        w
 # ----------------------------------------
-lvmdrive=/dev/sda
-lvmpart=${lvmdrive}2
-
 gdisk $lvmdrive
 
 
@@ -99,6 +89,8 @@ mount /dev/scsi/usr          $prefix/usr
 
 # ----------------------------------------
 # Add key to home (so it can be automounted)
+#
+# Make sure the file is accessible with root privileges only!
 # ----------------------------------------
 keys=$prefix/etc/key
 mkdir -pm 700 $keys
