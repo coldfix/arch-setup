@@ -68,6 +68,30 @@ cryptsetup open /dev/scsi/root crypt-root
 cryptsetup open /dev/scsi/home crypt-home
 
 # ----------------------------------------
+# Security measures
+#
+# This may take ages! Still, it might be a good idea to do this.
+# ----------------------------------------
+
+# Execute this (if you want from another TTY) if you want progress information
+dd_info() {
+    while pkill -USR1 '^dd$'; do
+        sleep 10s
+    done
+}
+
+# Make used space on encrypted partitions indistinguishable
+# (should always do this)
+dd if=/dev/zero of=/dev/mapper/crypt-root bs=4M
+dd if=/dev/zero of=/dev/mapper/crypt-home bs=4M
+
+# Delete old data on non-encrypted partitions
+# (need only if drive was used before)
+dd if=/dev/zero of=/dev/scsi/boot
+dd if=/dev/zero of=/dev/scsi/usr
+
+
+# ----------------------------------------
 # Create filesystems
 # ----------------------------------------
 mkfs.ext4 -m0 -L boot /dev/scsi/boot
