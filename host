@@ -44,6 +44,12 @@ prefix=/client
 # - Revert partition alignment:     x L 2048 m
 # - Create LVM partition:           n . . . 8e00
 # - Write and exit to shell:        w
+#
+# The first step erases all existing partitions on the disk. Make absolutely
+# sure this is what you want or skip it.
+#
+# For an explanation of step 2,3,4 see:
+# https://wiki.archlinux.org/index.php/GRUB2#GUID_Partition_Table_.28GPT.29_specific_instructions
 # ----------------------------------------
 gdisk $lvmdrive
 
