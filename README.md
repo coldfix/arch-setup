@@ -5,7 +5,7 @@
 ### Features
 
 * GPT-BIOS boot partition
-* LVM on LUKS
+* LUKS on LVM
 * encrypted root `/` and `/home` partition
 * separate non-encrypted `/usr` partition
 
