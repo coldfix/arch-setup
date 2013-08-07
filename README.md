@@ -11,10 +11,11 @@
 
 ### Flaws
 
-* A key for `/home` is stored on `/` in order
+* use of `/dev/urandom` as RNG
 * `/usr` is not encrypted
-* use of `/dev/urandom`
+* a key for `/home` is stored in `/etc/key` (for automatic unlocking)
 * the encryption is only as safe as the chosen password
+* a cryptheader backup is proposed
 
 ## Usage
 
@@ -49,11 +50,13 @@ the installation process:
 * [Partitioning](https://wiki.archlinux.org/index.php/Partitioning)
 * [mkinitcpio](https://wiki.archlinux.org/index.php/Mkinitcpio) and especially [/usr as a separate partition](https://wiki.archlinux.org/index.php/Mkinitcpio#.2Fusr_as_a_separate_partition)
 
-Additionally, I strongly recommend to have a look at
+Additionally, I recommend to have a look at
 
+* [cryptsetup - Security Aspects](http://code.google.com/p/cryptsetup/wiki/FrequentlyAskedQuestions#5._Security_Aspects)
 * [The Diceware Passphrase Home Page](http://world.std.com/~reinhold/diceware.html)
+* [Cipher benchmark for dm-crypt / LUKS](http://blog.wpkg.org/2009/04/23/cipher-benchmark-for-dm-crypt-luks/)
 
-Concerning the overwriting of the old data:
+Overwriting old data:
 
 * [Secure Deletion of Data from Magnetic and Solid-State Memory](https://www.usenix.org/legacy/publications/library/proceedings/sec96/full_papers/gutmann/index.html) if you are really paranoid. On the other hand, in this case this setup is probably nothing for you.
 * [Overwriting Hard Drive Data](http://computer-forensics.sans.org/blog/2009/01/15/overwriting-hard-drive-data/) for a more recent analysis on this topic
