@@ -3,7 +3,7 @@ echo "
 This content is meant as a guide and NOT for unattended execution.
 You should only copy and execute any of the snippets after careful
 inspection and adaptation to your needs.
-" && exit
+"; exit
 # ----------------------------------------
 # NOTE: This is a VERY non-paranoid setup:
 #  - /usr is not encrypted
