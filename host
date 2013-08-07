@@ -70,8 +70,9 @@ vgchange -ay
 # ----------------------------------------
 # Encrypt LUKS partitions
 # ----------------------------------------
-cryptsetup luksFormat -y /dev/scsi/root
-cryptsetup luksFormat -y /dev/scsi/home
+cipher=(--cipher aes-xts-plain64 --key-size 512 --hash sha512)
+cryptsetup $cipher -y luksFormat /dev/scsi/root
+cryptsetup $cipher -y luksFormat /dev/scsi/home
 cryptsetup open /dev/scsi/root crypt-root
 cryptsetup open /dev/scsi/home crypt-home
 
