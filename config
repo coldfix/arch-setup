@@ -21,7 +21,7 @@ EDIT()
 {
     for file in $@; do
         if [[ -f $repo$file ]]; then
-            $DIFFTOOL {$repo,$prefix}$file;
+            $DIFFTOOL {$prefix,$repo}$file;
         else
             $EDITOR $prefix$file
         fi
