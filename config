@@ -20,7 +20,7 @@ export DIFFTOOL=vimdiff
 EDIT()
 {
     for file in $@; do
-        if [[ -f $prefix$file ]]; then
+        if [[ -f $repo$file ]]; then
             $DIFFTOOL {$repo,$prefix}$file;
         else
             $EDITOR $prefix$file
