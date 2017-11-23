@@ -23,8 +23,8 @@ disks.
 * [LUKS on LVM](https://wiki.archlinux.org/index.php/Dm-crypt/Encrypting_an_entire_system#LUKS_on_LVM)
 * [Expanding LVM on multiple disks](https://wiki.archlinux.org/index.php/Dm-crypt/Specialties#Expanding_LVM_on_multiple_disks)
 
-In other cases, you should probably prefer LVM on LUKS, with your whole system
-encrypted!
+In other cases, LVM on LUKS is the more straightforward approach with your
+whole system encrypted!
 
 * [LVM on LUKS](https://wiki.archlinux.org/index.php/Dm-crypt/Encrypting_an_entire_system#LVM_on_LUKS)
 
@@ -47,15 +47,19 @@ Once the root console is up, check whether you have booted in UEFI mode:
     ls /sys/firmware/efi/efivars
 
 If there is nothing here, you are booted in legacy mode. If you do not have
-another OS that needs to be booted in BIOS mode, you should reboot and disable
-BIOS compatibility mode / CSM module in your BIOS menu!
+another OS that needs to be booted in BIOS mode, you should reboot, set
+"UEFI/Legacy Boot" to "UEFI Only" and disable CSM support in your BIOS menu!
 
 
 ##### Network
 
 If you were plugged in via ethernet during boot, your network should be up
-already. Otherwise, list your network interfaces to find the name of your
-ethernet interface:
+already. Verify:
+
+    ping google.com
+
+Otherwise, list your network interfaces to find the name of your ethernet
+interface:
 
     ip link
 
@@ -73,8 +77,9 @@ Check your IP:
 
 ##### SSH (optional)
 
-It may be more convenient to enter the commands from another computer via SSH.
-This requires a root password and enabling password login:
+I find it a lot more convenient to perform the rest of the installation
+procedure from an already running machine via SSH (allowing me to copy-paste
+commands). This requires a root password and enabling password login:
 
     passwd
     echo "PasswordAuthentication yes\nPermitRootLogin yes" >> /etc/ssh/sshd_config
@@ -150,9 +155,9 @@ Create logical volumes, the first one is only needed if you follow the BIOS-GPT
 branch:
 
     lvcreate lunix -n boot -L 512M
-    lvcreate lunix -n root -L 8G
+    lvcreate lunix -n root -L 32G
     lvcreate lunix -n swap -L 8G
-    lvcreate lunix -n usr  -L 64G
+    lvcreate lunix -n usr  -L 32G
     lvcreate lunix -n home -l 100%FREE
     vgchange -ay
 
@@ -183,6 +188,8 @@ Now unlock the LUKS containers:
 
     cryptsetup open /dev/lunix/root crypt-root
     cryptsetup open /dev/lunix/home crypt-home
+
+*NOTE:* you should probably encrypt your swap as well…
 
 
 ##### Security (OPTIONAL)
@@ -218,10 +225,10 @@ continuous status updates every 10s on the main console:
 
 Create filesystems:
 
+    mkfs.ext4 /dev/mapper/crypt-root -L root
+    mkfs.ext4 /dev/mapper/crypt-home -L home -m0
     mkfs.ext4 /dev/lunix/boot -L boot
-    mkfs.ext4 /dev/lunix/root -L arch
     mkfs.ext4 /dev/lunix/usr  -L usr
-    mkfs.ext4 /dev/lunix/home -L home -m0
     mkswap    /dev/lunix/swap
 
 I'm using `-m0` for home, since I'm greedy and there should be no need to
@@ -260,8 +267,17 @@ Make sure the file is accessible with root privileges only!
 
 Install base system:
 
-    pacstrap /mnt base base-devel vim zsh
-    genfstab -u $prefix >> $prefix/etc/fstab
+    pacstrap /mnt base vim zsh
+    genfstab -U /mnt >> /mnt/etc/fstab
+
+Edit `/mnt/etc/fstab` and set `passno` to 0 (the last number in the line) for
+the `/usr` partition (recommended if you have `/usr` as separate partition):
+
+    vim /mnt/etc/fstab
+
+You may also want to add a `noatime` option for all filesystems on an SSD, e.g.:
+
+    UUID=...   /usr       ext4        rw,noatime,relatime,data=ordered    0 0
 
 Now you can finally chroot into the new OS:
 
@@ -276,7 +292,7 @@ Before we forget, set a new root password:
 
 Change shell:
 
-    chsh -s $(which zsh)
+    chsh -s /usr/bin/zsh
 
 Enable `[multilib]` repository:
 
@@ -298,7 +314,7 @@ Set the default locale:
 
 Set the time zone:
 
-    ln -s /usr/share/zoneinfo/Europe/Berlin /etc/localtime
+    ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 
 Set a host name:
 
@@ -307,7 +323,7 @@ Set a host name:
 Download and use your favorite console keyboard layout:
 
     base=https://raw.githubusercontent.com/untasty/keyboard/master/
-    wget $base/usr/share/kbd/keymaps/c++.map -O /usr/share/kbd/c++.map
+    wget $base/usr/share/kbd/keymaps/c++.map -O /usr/share/kbd/keymaps/c++.map
     echo "KEYMAP=c++" >> /etc/vconsole.conf
 
 
@@ -319,9 +335,11 @@ Create a powerful non-root user:
 
     groupadd $NOROOT
     groupadd kalu
-    useradd -m -s $(which zsh) -g users \
+    useradd -m -s /usr/bin/zsh -g users \
         -G games,lp,optical,power,storage,video,wheel,kalu,network,$NOROOT \
         $NOROOT
+
+    passwd $NOROOT
 
 If you forgot a group, you can later on add it as follows:
 
@@ -336,7 +354,7 @@ can of course do everything manually).
 
 Install dependencies:
 
-    pacman -S wget yajl git sudo
+    pacman -S base-devel wget yajl git sudo
 
 Define a neat `aur_install` helper function to help with the build temporarily:
 
@@ -358,7 +376,7 @@ And use it to install yaourt and package-query (dependency) from the AUR:
 
 The most reasonable console fonts I have found so far are in an AUR package:
 
-    sudo -u $username yaourt -S terminus-font-ll2-td1
+    sudo -u $NOROOT yaourt -S terminus-font-ll2-td1
 
 It has a tilde (~) symbol that is properly vertically centered, and
 distinguishable characters `il1I` (eye, el, one, capital eye).
@@ -381,7 +399,7 @@ worked:
 Enable NTP:
 
     pacman -S ntp
-    systemctl enable ntpd.service
+    systemctl enable ntpd
 
     hwclock --systohc --utc
     ntpd -gq
@@ -393,9 +411,9 @@ Enable NTP:
 Edit `/etc/mkinitcpio.conf` and:
 
 Add the following `MODULES` (make consolefont working):
-- `i915`
-- `dm_mod`
-- `ext4`
+- `i915`: [early KMS](https://wiki.archlinux.org/index.php/Kernel_mode_setting#Early_KMS_start) for intel chips
+- `dm_mod`: for `/boot` on LVM
+- `ext4`: for the ext4 `/boot`
 
 Ensure that the following `HOOKS` are defined in this order (among others):
 
@@ -413,7 +431,7 @@ Ensure that the following `HOOKS` are defined in this order (among others):
 
 Example:
 
-    HOOKS="base udev consolefont keymap autodetect modconf block lvm2 encrypt filesystems keyboard shutdown fsck usr"
+    HOOKS="base udev autodetect consolefont keymap modconf block lvm2 encrypt filesystems keyboard shutdown fsck usr"
 
 Create the initramfs:
 
@@ -437,13 +455,22 @@ after rebooting.
 
 **IMPORTANT:** Add the following parameter in `/etc/default/grub`:
 
-    GRUB_CMDLINE_LINUX="cryptdevice=/dev/lunix/root:crypt-root dolvm"
+    GRUB_CMDLINE_LINUX="cryptdevice=/dev/lunix/root:crypt-root root=/dev/mapper/crypt-root"
 
-Now generate the boot menu and install grub to the hard drive:
+Now generate the boot menu:
 
     grub-mkconfig -o /boot/grub/grub.cfg
-    grub-install /dev/sda
 
+And install grub to the hard drive:
+
+* If booting in EFI mode:
+
+      pacman -S efibootmgr
+      grub-install --target=x86_64-efi --efi-directory=/boot
+
+* For GPT-BIOS boot (you may also need `--target=i386-pc`?):
+
+      grub-install /dev/sda
 
 ##### 3. Profit
 
