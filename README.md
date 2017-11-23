@@ -41,18 +41,19 @@ carefully compare the differences and adapt them to your needs.
 
 ## References
 
-Make sure you read the following archlinux resources before and/or during
-the installation process:
+In addition to following the steps described here, you would be well advised
+to read the following resources before and/or during the installation process:
 
-* the official [Installation Guide](https://wiki.archlinux.org/index.php/Official_Arch_Linux_Install_Guide) and the [Beginner's Guide](https://wiki.archlinux.org/index.php/Beginners'_Guide)
-* [dm-crypt with LUKS](https://wiki.archlinux.org/index.php/Dm-crypt_with_LUKS)
+* [Installation Guide](https://wiki.archlinux.org/index.php/Installation_guide)
+* [dm-crypt](https://wiki.archlinux.org/index.php/Dm-crypt)
 * [LVM](https://wiki.archlinux.org/index.php/LVM)
+* [LUKS on LVM](https://wiki.archlinux.org/index.php/Dm-crypt/Encrypting_an_entire_system#LUKS_on_LVM)
 * [Partitioning](https://wiki.archlinux.org/index.php/Partitioning)
 * [mkinitcpio](https://wiki.archlinux.org/index.php/Mkinitcpio) and especially [/usr as a separate partition](https://wiki.archlinux.org/index.php/Mkinitcpio#.2Fusr_as_a_separate_partition)
 
 Additionally, I recommend to have a look at
 
-* [cryptsetup - Security Aspects](http://code.google.com/p/cryptsetup/wiki/FrequentlyAskedQuestions#5._Security_Aspects)
+* [cryptsetup - Security Aspects](https://gitlab.com/cryptsetup/cryptsetup/wikis/FrequentlyAskedQuestions#5-security-aspects)
 * [The Diceware Passphrase Home Page](http://world.std.com/~reinhold/diceware.html)
 * [Cipher benchmark for dm-crypt / LUKS](http://blog.wpkg.org/2009/04/23/cipher-benchmark-for-dm-crypt-luks/)
 
@@ -60,4 +61,3 @@ Overwriting old data:
 
 * [Secure Deletion of Data from Magnetic and Solid-State Memory](https://www.usenix.org/legacy/publications/library/proceedings/sec96/full_papers/gutmann/index.html) if you are really paranoid. On the other hand, in this case this setup is probably nothing for you.
 * [Overwriting Hard Drive Data](http://computer-forensics.sans.org/blog/2009/01/15/overwriting-hard-drive-data/) for a more recent analysis on this topic
-
