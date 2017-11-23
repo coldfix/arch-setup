@@ -333,18 +333,15 @@ Create a powerful non-root user:
 
     NOROOT=thomas
 
-    groupadd $NOROOT
-    groupadd kalu
-    useradd -m -s /usr/bin/zsh -g users \
-        -G games,lp,optical,power,storage,video,wheel,kalu,network,$NOROOT \
-        $NOROOT
+    useradd $NOROOT -m -s /usr/bin/zsh \
+        -G games,lp,optical,power,storage,video,wheel,network,users
 
     passwd $NOROOT
 
 If you forgot a group, you can later on add it as follows:
 
-    groupadd httpd
-    gpasswd -a thomas httpd
+    groupadd kalu
+    gpasswd -a thomas kalu
 
 
 ##### Install yaourt
