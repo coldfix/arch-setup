@@ -472,3 +472,19 @@ And install grub to the hard drive:
 ##### 3. Profit
 
 Now install further packages as required and reboot into the new system!
+
+Before you boot into your new system without remote access, I recommend
+installing:
+
+    # useful stuf like `ifconfig`:
+    pacman -S net-tools
+
+    pacman -S networkmanager
+    systemctl enable NetworkManager
+
+    pacman -S openssh
+    systemctl enable sshd
+
+And on your client machine:
+
+    ssh-copy-id root@192.168.0.XX
