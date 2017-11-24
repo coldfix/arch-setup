@@ -2,17 +2,11 @@
 
 Installation guide for an archlinux setup with the following aspects:
 
-* GPT-BIOS boot partition
+* EFI system partition
 * LUKS on LVM
 * encrypted root `/` and `/home` partition
 * separate non-encrypted `/usr` partition (for performance)
 * a key for `/home` is stored in `/etc/key` (for automatic unlocking)
-
-A GTP-BIOS boot partition is usually not needed for new installations on UEFI
-capable devices. However, if you have another OS that requires a legacy BIOS
-boot, it might be necessary. For example, if you had already installed another
-OS on your hard drive without paying attention to the boot mode and now you
-bought a new HDD where you want to install linux (good for you).
 
 LUKS on LVM with an unencrypted `/usr` partition is not very common approach,
 but it may be an option if you worry about performance on an old-ish machine.
@@ -46,9 +40,12 @@ Once the root console is up, check whether you have booted in UEFI mode:
 
     ls /sys/firmware/efi/efivars
 
-If there is nothing here, you are booted in legacy mode. If you do not have
-another OS that needs to be booted in BIOS mode, you should reboot, set
-"UEFI/Legacy Boot" to "UEFI Only" and disable CSM support in your BIOS menu!
+If there is nothing here, you are booted in legacy mode. If you have another OS
+that needs to be booted in BIOS mode (did you already install another OS?), take
+into account the additional steps described in [GPT-BIOS](https://github.com/coldfix/arch-setup/blob/master/GPT-BIOS.md)!
+
+If EFI boot is no problem, you should reboot, enter the BIOS startup menu, set
+"UEFI/Legacy Boot" to "UEFI Only" and disable CSM support!
 
 
 ##### Network
@@ -105,11 +102,9 @@ Ensure the system clock is accurate:
 * [Time](https://wiki.archlinux.org/index.php/Time)
 
 
-##### Partitioning (EFI)
+##### Partitioning
 
-For legacy BIOS boot, skip to the next section.
-
-If you are booted in UEFI mode, create partitions as follows:
+Create ESP and LVM partitions as follows:
 
     gdisk /dev/sda
 
@@ -120,28 +115,13 @@ If you are booted in UEFI mode, create partitions as follows:
 
     mkfs.vfat -F32 -n boot /dev/sda1
 
+If you didn't boot in EFI mode, see [GPT-BIOS](https://github.com/coldfix/arch-setup/blob/master/GPT-BIOS.md#partitioning) instead.
+
 The first step erases all existing partitions on the disk. Make absolutely
 sure this is what you want or skip it.
 
 * [Partitioning](https://wiki.archlinux.org/index.php/Partitioning)
 * [EFI System Partition](https://wiki.archlinux.org/index.php/EFI_System_Partition)
-
-
-##### Partitioning (BIOS-GPT)
-
-Setup a BIOS-GPT partition:
-
-    gdisk /dev/sda
-
-      Create new partition table:     o
-      Switch to 1-byte alignment:     x L 1 m
-      Create BIOS boot partition:     n 1 34 2047 ef02
-      Revert partition alignment:     x L 2048 m
-      Create LVM partition:           n . . . 8e00
-      Write and exit to shell:        w
-
-* [Partitioning](https://wiki.archlinux.org/index.php/Partitioning)
-* [GRUB/GPT specific instructions](https://wiki.archlinux.org/index.php/GRUB#GUID_Partition_Table_.28GPT.29_specific_instructions) (for an explanation of step 2,3,4)
 
 
 ##### Setup LVM
@@ -151,10 +131,8 @@ Setup a physical volume and a volume group named lunix:
     pvcreate /dev/sda2
     vgcreate lunix /dev/sda2
 
-Create logical volumes, the first one is only needed if you follow the BIOS-GPT
-branch:
+Create logical volumes:
 
-    lvcreate lunix -n boot -L 512M
     lvcreate lunix -n root -L 32G
     lvcreate lunix -n swap -L 8G
     lvcreate lunix -n usr  -L 32G
@@ -227,7 +205,6 @@ Create filesystems:
 
     mkfs.ext4 /dev/mapper/crypt-root -L root
     mkfs.ext4 /dev/mapper/crypt-home -L home -m0
-    mkfs.ext4 /dev/lunix/boot -L boot
     mkfs.ext4 /dev/lunix/usr  -L usr
     mkswap    /dev/lunix/swap
 
@@ -241,7 +218,7 @@ Mount filesystems:
     mkdir -p /mnt/home
     mkdir -p /mnt/usr
     mount  /dev/mapper/crypt-home /mnt/home
-    mount  /dev/lunix/boot        /mnt/boot
+    mount  /dev/sda1              /mnt/boot
     mount  /dev/lunix/usr         /mnt/usr
     swapon /dev/lunix/swap
 
@@ -409,8 +386,6 @@ Edit `/etc/mkinitcpio.conf` and:
 
 Add the following `MODULES` (make consolefont working):
 - `i915`: [early KMS](https://wiki.archlinux.org/index.php/Kernel_mode_setting#Early_KMS_start) for intel chips
-- `dm_mod`: for `/boot` on LVM
-- `ext4`: for the ext4 `/boot`
 
 Ensure that the following `HOOKS` are defined in this order (among others):
 
@@ -460,14 +435,8 @@ Now generate the boot menu:
 
 And install grub to the hard drive:
 
-* If booting in EFI mode:
-
-      pacman -S efibootmgr
-      grub-install --target=x86_64-efi --efi-directory=/boot
-
-* For GPT-BIOS boot (you may also need `--target=i386-pc`?):
-
-      grub-install /dev/sda
+    pacman -S efibootmgr
+    grub-install --target=x86_64-efi --efi-directory=/boot
 
 ##### 3. Profit
 
