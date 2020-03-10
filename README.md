@@ -219,9 +219,17 @@ Make sure the file is accessible with root privileges only!
 
 ##### Install and enter guest OS
 
+Edit `/etc/pacman.d/mirrorlist` to select e.g. only geographically close
+mirrors, or copy over from an existing host.
+
+See also [wiki/Mirrors#List_by_speed](https://wiki.archlinux.org/index.php/Mirrors#List_by_speed).
+
+
+##### Install and enter guest OS
+
 Install base system:
 
-    pacstrap /mnt base vim zsh
+    pacstrap /mnt base vim zsh linux linux-firmware
     genfstab -U /mnt >> /mnt/etc/fstab
 
 Edit `/mnt/etc/fstab` and set `passno` to 0 (the last number in the line) for
@@ -248,7 +256,7 @@ Change shell:
 
     chsh -s /usr/bin/zsh
 
-Enable `[multilib]` repository:
+Enable `[multilib]` repository and `Color`:
 
     vim /etc/pacman.conf
     pacman -Syy
@@ -297,15 +305,19 @@ If you forgot a group, you can later on add it as follows:
     groupadd kalu
     gpasswd -a thomas kalu
 
+Edit `sudoers` to allow users in the `wheel` group to execute any command:
 
-##### Install yaourt
+    visudo
 
-It can be helpful to have an AUR helper such as `yaourt` (but ultimately, you
+
+##### Install yay
+
+It can be helpful to have an AUR helper such as `yay` (but ultimately, you
 can of course do everything manually).
 
 Install dependencies:
 
-    pacman -S base-devel wget yajl git sudo
+    pacman -S base-devel wget git sudo go
 
 Define a neat `aur_install` helper function to help with the build temporarily:
 
@@ -317,17 +329,16 @@ Define a neat `aur_install` helper function to help with the build temporarily:
         pacman -U $1-*.pkg.tar.xz
     ) }
 
-And use it to install yaourt and package-query (dependency) from the AUR:
+And use it to install yay from the AUR:
 
-    aur_install package-query
-    aur_install yaourt
+    aur_install yay
 
 
 ##### Console font
 
 The most reasonable console fonts I have found so far are in an AUR package:
 
-    sudo -u $NOROOT yaourt -S terminus-font-ll2-td1
+    sudo -u $NOROOT yay -S terminus-font-ll2-td1
 
 It has a tilde (~) symbol that is properly vertically centered, and
 distinguishable characters `il1I` (eye, el, one, capital eye).
